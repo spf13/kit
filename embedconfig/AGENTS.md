@@ -4,6 +4,10 @@
   them into one flat configuration struct of scalars.
 - Do not default dimensions, truncation, retrieval limits, or generation
   serving. Those choices change compatibility or recall.
+- `Model.Validate` accepts cosine only. `MetricDotProduct` and `MetricL2`
+  stay declared and fail validation until those distances can be stored.
+- `InputLimits.MaxSpans` of zero means no span cap. It is valid. It does not
+  mean the token window is unset.
 - `ApplyDefaults` may fill batch size 64, transport timeout 30s, and a 32 MiB
   response cap. It must not invent a model, a dimension, or a chunk limit.
 - `VectorIdentity` includes model, metric, normalization, pooling, role

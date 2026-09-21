@@ -153,6 +153,37 @@ func TestPrepareRejectsIncompleteModelAndBudgets(t *testing.T) {
 	}
 }
 
+func TestModelRejectsMetricsTheVectorPipelineCannotStore(t *testing.T) {
+	for _, metric := range []embedconfig.Metric{embedconfig.MetricDotProduct, embedconfig.MetricL2} {
+		model := endpointRetrievalSetup().Model
+		model.Metric = metric
+		err := model.Validate()
+		require.Error(t, err)
+		require.ErrorContains(t, err, "not storable")
+	}
+	require.NoError(t, endpointRetrievalSetup().Model.Validate())
+}
+
+func TestMaxSpansZeroIsUnlimited(t *testing.T) {
+	window := embedconfig.InputLimits{
+		Recipe:     "v2",
+		Tokenizer:  "bge-m3",
+		ContentID:  "body",
+		MaxTokens:  512,
+		Truncation: embedconfig.TruncationReject,
+		MaxSpans:   0,
+	}
+	require.NoError(t, window.Validate(), "MaxSpans 0 is valid and means no span cap")
+
+	capped := window
+	capped.MaxSpans = 1
+	open, err := embedconfig.InputIdentity(endpointRetrievalSetup().Model, embedconfig.Roles{}, embedconfig.Deployment{}, window)
+	require.NoError(t, err)
+	limited, err := embedconfig.InputIdentity(endpointRetrievalSetup().Model, embedconfig.Roles{}, embedconfig.Deployment{}, capped)
+	require.NoError(t, err)
+	assert.NotEqual(t, open, limited, "a zero span cap is a real unlimited setting, not an omitted field")
+}
+
 func TestCanonicalEndpoint(t *testing.T) {
 	got, err := embedconfig.CanonicalEndpoint("HTTPS://Example.TEST:443/v1/", false)
 	require.NoError(t, err)
